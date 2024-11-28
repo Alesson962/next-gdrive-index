@@ -1,32 +1,26 @@
-# Stage 1: Build
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-# Install dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
-
-# Copy the source code and build the Next.js app
-COPY . .
-RUN npm run build
-
-# Stage 2: Serve
+# Base image for Node.js
 FROM node:18-alpine
 
+# Set work directory
 WORKDIR /app
 
-# Copy only the necessary artifacts from the build stage
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/static ./.next/static
+# Copy package.json and package-lock.json
+COPY package*.json ./
 
-# Expose the application's port
+# Install dependencies
+RUN npm install --production
+
+# Copy the rest of the project files
+COPY . .
+
+# Build the Next.js app
+RUN npm run build
+
+# Expose the default Next.js port
 EXPOSE 3000
 
-# Set the environment variables
+# Specify the NODE_ENV environment variable
 ENV NODE_ENV=production
-ENV PORT=3000
 
-# Start the app
-CMD ["node", "server.js"]
+# Start the Next.js app
+CMD ["npm", "run", "start"]
